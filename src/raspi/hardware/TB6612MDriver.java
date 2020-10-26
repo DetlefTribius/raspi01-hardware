@@ -108,9 +108,8 @@ public class TB6612MDriver
      * setPWM(float speed)
      * @param speed
      * @throws IOException 
-     * @throws InterruptedException 
      */
-    public void setPWM(float speed) throws IOException, InterruptedException
+    public void setPWM(float speed) throws IOException
     {
         final int pwmValue = Math.round(Math.abs(speed/MAXIMUM_POWER)*MAXIMUM_PWM);
 
@@ -119,10 +118,23 @@ public class TB6612MDriver
         final boolean isMA = this.motorState.isPinMA();
         final boolean isMB = this.motorState.isPinMB();
         
-        Thread.sleep(50);
-        
         this.outputPinMA.setState(isMA? PinState.HIGH : PinState.LOW);
         this.outputPinMB.setState(isMB? PinState.HIGH : PinState.LOW);
+
+        try
+        {
+            // Mal etwas warten...
+            Thread.sleep(10);
+        } 
+        catch (InterruptedException exception)
+        {
+            // Hack: Keine Fehlerbehandlung an dieser Stelle, 
+            // die Methode throws nur die IOException, damit Einheitlichkeit
+            // zum Servo...
+            // Aber es wird geloggt und eine RuntimeException geworfen...
+            logger.error("InterruptedException in setPWM()", exception);
+            throw new RuntimeException("InterruptedException in setPWM()", exception);
+        }
         
         this.motorA.setPWM(pwmValue);
         this.motorB.setPWM(pwmValue);

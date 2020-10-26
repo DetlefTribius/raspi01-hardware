@@ -223,7 +223,7 @@ class TB6612MDriverTest
         } 
         catch (IOException | InterruptedException exception)
         {
-            fail("IOException in testTB6612MDriver_1()", exception);             
+            fail("Exception in testTB6612MDriver_1()", exception);             
         }
     }
     
@@ -259,7 +259,7 @@ class TB6612MDriverTest
         } 
         catch (IOException | InterruptedException exception)
         {
-            fail("IOException in testTB6612MDriver_2()", exception);             
+            fail("Exception in testTB6612MDriver_2()", exception);             
         }
     }
 }
