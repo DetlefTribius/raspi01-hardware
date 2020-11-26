@@ -35,8 +35,8 @@
   </target>
 
   <target name="compile" depends="prepare" description="compile the Java source code to class files">
-    <javac srcdir="${src.dir}" destdir="${bin.dir}" classpathref="classpath" />
-    <javac srcdir="${test.dir}" destdir="${bin.dir}" classpathref="classpath" />
+    <javac srcdir="${src.dir}" destdir="${bin.dir}" classpathref="classpath" debug="on"/>
+    <javac srcdir="${test.dir}" destdir="${bin.dir}" classpathref="classpath" debug="on"/>
     <echo>Kopieren der *.png-Files...</echo>
     <copy todir="${bin.dir}">
       <fileset dir="${src.dir}" includes="**/*.png"/>
