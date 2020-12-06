@@ -22,7 +22,11 @@ import com.pi4j.io.gpio.RaspiPin;
 
 /**
  * @author Detlef Tribius
- *
+ * <p>
+ * Die Testklasse US100SensorTest ermoeglicht einen 
+ * Funktionstest mit dem Abstandssensor us-100.
+ * </p>
+ * 
  */
 class US100SensorTest
 {
@@ -34,6 +38,9 @@ class US100SensorTest
 
     /**
      * isRaspi - Kennung fuer Lauf auf einem Raspi...
+     * <p>
+     * 
+     * </p>
      */
     private static boolean isRaspi = false;
 
@@ -53,16 +60,17 @@ class US100SensorTest
     public final static String OS_ARCH_RASPI = "arm";
 
     /**
-     * 
+     * Trigger-Pin am Raspi. In der 'normalen' Zaehlung ist es
+     * hier der GPIO018 => GPIO_01 (Pin 12).
      */
     public final static Pin TRIG_TX_PIN = RaspiPin.GPIO_01;
     
     /**
-     * 
+     * Echo-Pin am Raspi. In der 'normalen' Zaehlung ist es 
+     * hier der GPIO027 => GPIO_02 (Pin 13).
      */
     public final static Pin ECHO_RX_PIN = RaspiPin.GPIO_02;
 
-    
     /**
      * DELAY = 1000 Pausenzeit (1000 ms) fuer einzelne Aktionen...
      */
@@ -70,6 +78,9 @@ class US100SensorTest
     
     /**
      * COUNTER_LIMIT = 20 - Grenze Durchlaufzaehler...
+     * <p>
+     * Der Abstand wird COUNTER_LIMIT mal ermittelt...
+     * </p>
      */
     public final static int COUNTER_LIMIT = 20;
     

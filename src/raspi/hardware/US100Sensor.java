@@ -22,25 +22,30 @@ import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 /**
  * @author Detlef Tribius
  * 
+ * <p>
  * 
+ * Vgl. auch https://www.fambach.net/raspberry-pi-3-us-100/ <br>
+ *      auch https://sites.google.com/site/myscratchbooks/home/projects/project-09-ultrasonic-sensor <br>
+ * </p>
  * 
- * Vgl. auch https://www.fambach.net/raspberry-pi-3-us-100/
- *      auch https://sites.google.com/site/myscratchbooks/home/projects/project-09-ultrasonic-sensor
- *
- *
- *  Using the US-100 Sensor in Pulse Width Mode
- *
+ * <p>
+ *  <b>Using the US-100 Sensor in Pulse Width Mode </b>
+ * </p>
+ * <p>
  *  Select the pulse mode by removing the shunt from the operating mode selection jumper. 
  *  Connect the Trig/TX pin to a digital output on your microcontroller and the Echo/RX pin 
  *  to a digital input.
- *
+ * </p>
+ * <p>
  *  To obtain a distance measurement, set the Trig/TX pin high for at least 50 microseconds 
  *  then set it low to trigger the measurement. The module will output a high pulse on the 
  *  Echo/RX line with a width that corresponds to the distance measured. 
  *  Use your microcontroller to measure the pulse width using microseconds. 
  *  Use the following formula to calculate the distance:
- *
- *   Millimeters = PulseWidth * 34 / 100 / 2
+ * </p>
+ * <p>
+ *   <code>Millimeters = PulseWidth * 34 / 100 / 2</code>
+ * </p>
  */
 public class US100Sensor
 {
@@ -55,14 +60,25 @@ public class US100Sensor
      */
     private final GpioController gpio;
    
+    /**
+     * isRaspi - boolsche Kennung, wenn Lauf im BS des Raspi wird Kennung
+     * auf true gesetzt. Damit ist Lauffaehigkeit auch in anderen
+     * Umgebungen moeglich...
+     */
     private final boolean isRaspi;
     
+    /**
+     * trigTxOutput - beschreibt Trigger-Pin (als Output)
+     */
     private final GpioPinDigitalOutput trigTxOutput;
     
+    /**
+     * echoRxInput - beschreibt Echo-Pin (als Input)
+     */
     private final GpioPinDigitalInput echoRxInput;
     
     /**
-     * 
+     * Status status - Statusablage...
      */
     private Status status = US100Sensor.Status.NEUTRAL;
     
@@ -99,15 +115,20 @@ public class US100Sensor
      */
     private final static int NANO_TO_MILLIS = 6;
     
+    /**
+     * SCALE_DELTA_TIME = 1 - Anzeigegenauigkeit der Differenzzeit, 
+     * 1 Nachkommastelle
+     */
     private final static int SCALE_DELTA_TIME = 1;
     
     /**
-     * Abstand in cm
+     * distance - Abstand in cm
      */
     private BigDecimal distance = BigDecimal.ZERO;
     
     /**
-     * 
+     * FACTOR - Konstante 34/2 (zur Berechnung des Abstandes aus der Laufzeit
+     * des Schalls)
      */
     private final static long FACTOR = 34/2;
     
@@ -130,9 +151,10 @@ public class US100Sensor
     private final static int SCALE_DISTANCE = 2;
     
     /**
-     * 
-     * @param trigTxPin
-     * @param echoRxPin
+     * US100Sensor(...) - Konstruktor zum US100Sensor
+     * @param gpio - Referenz auf Controller
+     * @param trigTxPin - Referenz auf Trigger-Pin
+     * @param echoRxPin - Referenz auf Echo-Pin 
      */
     public US100Sensor(GpioController gpio,
                        Pin trigTxPin, 
@@ -207,7 +229,7 @@ public class US100Sensor
     }
 
     /**
-     * startMeasuring()
+     * startMeasuring() - Starten des Messvorganges...
      * @throws InterruptedException 
      */
     public void startMeasuring() throws InterruptedException
@@ -256,6 +278,15 @@ public class US100Sensor
     }
 
     /**
+     * getStatus()
+     * @return the status
+     */
+    public final Status getStatus()
+    {
+        return status;
+    }
+
+    /**
      * 
      * Status - enum beschreibt den Status
      * des Messvorganges
@@ -290,5 +321,4 @@ public class US100Sensor
             return this.status;
         }
     }
-    
 }
