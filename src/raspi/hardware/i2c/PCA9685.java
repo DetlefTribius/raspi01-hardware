@@ -112,6 +112,20 @@ public class PCA9685 extends I2C
      * Evtl. Beauftragung in der Initialisierung: write(MODE1_REGISTER, (byte) ALLCALL);
      */
     public final static int ALLCALL = 0x01;
+
+    /**
+     * RESTART Bit 7, daher Wert 0x80
+     * User writes logic 1 to this bit to clear it to logic 0. 
+     * A user write of logic 0 will have no effect.
+     * <ul>
+     *  <li>0 - Restart disabled.</li>
+     *  <li>1 - Restart enabled.</li>
+     * </ul>
+     */
+    public final static int RESTART = 0x80;
+    ////////////////////////////////////////////////////////////////
+    // Ende Konstanten fuer das MODE1_REGISTER.
+    ////////////////////////////////////////////////////////////////
     
     /**
      * SWRST = 0x06; Software Reset Call (SWRST Call) 
