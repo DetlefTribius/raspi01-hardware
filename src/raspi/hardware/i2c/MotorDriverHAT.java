@@ -11,30 +11,79 @@ import raspi.hardware.i2c.PCA9685.Property;
 
 /**
  * 
+ * <p>
+ * Vorgehen:
+ * (vgl. auch PCA9685_datasheet.pdf)
+ * </p>
+ * <ul>
+ * <li>
+ * => Init PCA9685 <br>
+ *     - writeByte(MODE1, 0x00);
+ * </li>
+ * <li>
+ * => setPwmFreq() PCA9685 <br>
+ *     - The PRE_SCALE register can only be set when the SLEEP bit of MODE1 register is set to logic 1.
+ * </li>    
+ * </ul>
  * 
  * @author Detlef Tribius
  *
  */
 public class MotorDriverHAT
 {
-
-    
+    /**
+     * pca9685
+     */
     private final MotorDriverHAT.PCA9685 pca9685;
-    
     
     /**
      * 
      * @param dev I2CDevice
+     * @throws IOException 
      */
-    public MotorDriverHAT(I2CDevice dev)
+    public MotorDriverHAT(I2CDevice dev) throws IOException
     {
         this.pca9685 = new PCA9685(dev);
-        
     }
     
-    
+    /**
+     * initialize(int frequency) - Initialisierung des PCA9685
+     * 
+     * @param frequency
+     * @throws IOException
+     */
+    public void initialize(int frequency) throws IOException
+    {
+        // Initialisierung des PCA9685, vgl. auch Muster in
+        // Motor_Driver_HAT_Code.7z (PCA9685_Init(char addr))...
+        getPca9685().initialize();
+        // Weitere Initialisierung mit dem Setzen der Fequenz.
+        // Vgl. Muster PCA9685_SetPWMFreq(UWORD freq)...
+        getPca9685().setPwmFrequency(frequency);
+    }
     
     /**
+     * 
+     * @param motor
+     * @param speed
+     * @throws IOException 
+     */
+    public void setPwm(Motor motor, float speed) throws IOException
+    {
+        getPca9685().getPwm(motor).setPwm(speed);
+    }
+    
+    /**
+     * getPca9685()
+     * @return Referenz auf this.pca9685
+     */
+    public MotorDriverHAT.PCA9685 getPca9685()
+    {
+        return this.pca9685;
+    }
+    
+    /**
+     * Klasse PCA9685
      * 
      * @author Detlef Tribius
      *
@@ -125,6 +174,43 @@ public class MotorDriverHAT
          * IN2B_CHANNEL = 4
          */
         public final static int IN2B_CHANNEL = 4;
+
+        ////////////////////////////////////////////////////////////////
+        // Konstanten fuer das MODE1_REGISTER...
+        ////////////////////////////////////////////////////////////////
+        /** 
+         * SLEEP Bit 4, daher Wert 0x10
+         * wenn Bit gleich 0, dann 'Normal mode'
+         * wenn Bit gleich 1, dann 'Low power mode', Oscillator off 
+         */
+        public final static int SLEEP = 0x10;
+
+        /**
+         * ALLCALL Bit 0, daher Wert 0x01
+         * wenn Bit gleich 0, dann 'PCA9685 does not respond to LED All Call I 2 C-bus address.'
+         * wenn Bit gleich 1, dann 'PCA9685 responds to LED All Call I2C-bus address.'
+         * Evtl. Beauftragung in der Initialisierung: write(MODE1_REGISTER, (byte) ALLCALL);
+         */
+        public final static int ALLCALL = 0x01;
+
+        /**
+         * RESTART Bit 7, daher Wert 0x80
+         * User writes logic 1 to this bit to clear it to logic 0. 
+         * A user write of logic 0 will have no effect.
+         * <ul>
+         *  <li>0 - Restart disabled.</li>
+         *  <li>1 - Restart enabled.</li>
+         * </ul>
+         */
+        public final static int RESTART = 0x80;
+        ////////////////////////////////////////////////////////////////
+        // Ende Konstanten fuer das MODE1_REGISTER.
+        ////////////////////////////////////////////////////////////////
+        
+        /**
+         * SWRST = 0x06; Software Reset Call (SWRST Call) 
+         */
+        public final static int SWRST = 0x06;
         
         ////////////////////////////////////////////////////////////////
         // Konstanten fuer das MODE2_REGISTER...
@@ -136,6 +222,15 @@ public class MotorDriverHAT
          * Beauftragung evtl.: write(MODE2_REGISTER, (byte) OUTDRV); waehrend der initialisierung.
          */
         public final static int OUTDRV = 0x04;
+        
+        /**
+         * INTERNAL_FREQUENCY = 25000000; 25 MHz - interne Frequenz...
+         * <p>
+         * Diese Interne Freuenz wird durch einen Vorteiler reduziert und 
+         * ergibt dann die Pulsfrequenz des PCA9685...
+         * </p>
+         */
+        public final static long INTERNAL_FREQUENCY = 25000000;
         
         /**
          * PWM_MAX = 4095 => (Aufloesung-1), bedeutet Stufigkeit der PWM-Channel...
@@ -157,6 +252,12 @@ public class MotorDriverHAT
         private final PwmChannel pwm_B;
         
         /**
+         * DELAY = 5 Pausenzeit (5 ms) fuer zeitl. Pausen 
+         * waehrend der Konfiguration...
+         */
+        public final static int DELAY = 5;        
+        
+        /**
          * Konstruktor zum Baustein PCA9685...
          * @param dev - Referenz auf I2CDevice (zuvor angelegt)
          */
@@ -172,15 +273,132 @@ public class MotorDriverHAT
             this.pwm_B = new PwmChannel(PMWB_CHANNEL, IN1B_CHANNEL, IN1B_CHANNEL);
         }
         
+        /**
+         * 
+         * @param motor
+         * @return
+         */
+        private PwmChannel getPwm(Motor motor)
+        {
+            if (motor == Motor.MOTOR_A)
+            {
+                return this.pwm_A;
+            }
+            if (motor == Motor.MOTOR_B)
+            {
+                return this.pwm_B;
+            }
+            return null;
+        }
         
+        /**
+         * initialize() - 
+         * @throws IOException
+         */
         private void initialize() throws IOException
         {
-            write(ALL_LED_ON_L_REGISTER, (byte) 0);
-            write(ALL_LED_ON_H_REGISTER, (byte) 0);
-            write(ALL_LED_OFF_L_REGISTER, (byte) 0);
-            write(ALL_LED_OFF_H_REGISTER, (byte) 0);
+            // 1.)
+            write(MODE1_REGISTER, (byte)0x00);
+            // 2.)
+            write(ALL_LED_ON_L_REGISTER, (byte)0x00);
+            write(ALL_LED_ON_H_REGISTER, (byte)0x00);
+            write(ALL_LED_OFF_L_REGISTER, (byte)0x00);
+            write(ALL_LED_OFF_H_REGISTER, (byte)0x00);
         }
 
+        /**
+         * setPwmFrequency(int frequency) - Puls-Frequenz setzen...
+         * @param frequency Frequenz in Hz (z.B. 50, 100...)
+         * @throws IOException 
+         */
+        private void setPwmFrequency(int frequency) throws IOException
+        {
+            // Vorteiler prescale bestimmen...
+            final byte prescale = getPrescaleValue(frequency);
+            
+            // oldMode auslesen...
+            final byte oldMode = (byte)(read(MODE1_REGISTER) & 0xff);
+            // setMode: Zum Seten das Sleep-Bit setzen...
+            final byte setMode = (byte)(oldMode | SLEEP); 
+            // newMode: Aus oldMode mit Restart enabled...
+            final byte newMode = (byte)(oldMode | RESTART);
+            // Konfigurieren...
+            write(MODE1_REGISTER, setMode);
+            sleep(DELAY);
+            write(PRE_SCALE_REGISTER, prescale);
+            sleep(DELAY);
+            write(MODE1_REGISTER, newMode);
+            sleep(DELAY);
+        }
+        
+        /**
+         * getPrescaleValue(int frequency) - liefert den Wert
+         * fuer den Vorteiler zum Einstellen einer bestimmten Frequenz.
+         * <p>
+         * Achtung: Es wird z.T. mit einem Koorekturwert gearbeitet 
+         * (wird hier vernachlaessigt!).
+         * <br>
+         * <code>
+         * freq *= 0.9;  // Correct for overshoot in the frequency setting
+         * </code>
+         * </p>
+         * <p>
+         * Anm.:
+         * The maximum PWM frequency is 1526 Hz if the PRE_SCALE register is set "0x03h".
+         * The minimum PWM frequency is 24 Hz if the PRE_SCALE register is set "0xFFh".
+         * </p>
+         * <p>
+         * C-Muster:
+         * <code>
+         *     double prescaleval = 25000000.0;<br>
+         *     prescaleval /= 4096.0;<br>
+         *     prescaleval /= freq;<br>
+         *     prescaleval -= 1;<br>
+         *     UBYTE prescale = floor(prescaleval + 0.5);<br>
+         * </code>
+         * </p>
+         * @param int frequency (...50 Hz...60 Hz...)
+         * @return prescaleValue (byte)
+         */
+        private byte getPrescaleValue(int frequency)
+        {
+            // Am Ende -1+0.5 => -0.5 (Anm.: +0.5 zum Runden...) 
+            final double value =  Math.floor(((double)INTERNAL_FREQUENCY)/(double)(4096*frequency)-0.5);
+            
+            final int prescaleValue = (int)value; 
+            if (prescaleValue < 0x03)
+            {
+                // Begrenzung nach unten...
+                return (byte)0x03;
+            }
+            if (prescaleValue > 0xff)
+            {
+                // Begrenzung nach oben...
+                return (byte)0xff;
+            }
+            return (byte)prescaleValue;
+        }
+        
+        /**
+         * sleep(int millis)
+         * @param millis
+         */
+        private final void sleep(int millis)
+        {
+            try
+            {
+                Thread.sleep(millis);
+            } 
+            catch (InterruptedException exception)
+            {
+                final String message = new StringBuilder().append("Exception Thread.sleep(): ")
+                                                          .append(exception.getMessage())
+                                                          .toString();
+                
+                throw new RuntimeException(message);
+            }
+        }
+       
         /**
          * Die abstrakte Klasse Channel beschreibt einen (der 16)
          * Channel des PWM-Bausteins PCA9685.
@@ -194,19 +412,27 @@ public class MotorDriverHAT
          * Diese unterschiedlichen Channel werden durch konkrete Klassen
          * beschrieben (PWMChanel, InChannel)
          * </p>
+         * <ul>
+         *  <li>LED0-PWMA</li>
+         *  <li>LED1-AIN2</li>
+         *  <li>LED2-AIN1</li>
+         *  <li>LED3-BIN1</li>
+         *  <li>LED4-BIN2</li>
+         *  <li>LED5-PWMB</li>
+         * </ul>
          * @author Detlef Tribius
          *
          */
         private abstract class Channel
         {
             /**
-             * 
+             * channel - Nummer des Channel, hier von 0 bis 5.
              */
             private final int channel;
             
             /**
-             * 
-             * @param channel
+             * Channel(int channel) - Konstruktor eines Channels
+             * @param channel - Nummer des Channels
              */
             public Channel(int channel)
             {
@@ -359,7 +585,8 @@ public class MotorDriverHAT
         /**
          * Klasse InChannel beschreibt einen "Steuer"-Channel.
          * Dieser spezielle Channel kennt nur die Ausgaben "0" 
-         * oder "1".
+         * oder "1". Diese Ausgaben werden realisiert, indem
+         * setPwm() mit 0 oder PWM_MAX beauftragt wird.
          * <p>
          * 
          * </p>
@@ -386,6 +613,43 @@ public class MotorDriverHAT
             {
                 setPwm(0, isHighLevel? PWM_MAX : 0);
             }
+        }
+    }
+    
+    /**
+     * enum Motor
+     * 
+     * @author Detlef Tribius
+     */
+    static enum Motor
+    {
+        /**
+         * MOTOR_A("Motor A")
+         */
+        MOTOR_A("Motor A"),
+        /**
+         * MOTOR_B("Motor B")
+         */
+        MOTOR_B("Motor B");
+        /**
+         * motor - textuelle Beschreibung
+         */
+        private final String motor;
+        /**
+         * Motor(String motor) - Konstruktor
+         * @param motor
+         */
+        private Motor(String motor)
+        {
+            this.motor = motor;
+        }
+        /**
+         * getName() 
+         * @return
+         */
+        public String getName()
+        {
+            return this.motor;
         }
     }
 }
