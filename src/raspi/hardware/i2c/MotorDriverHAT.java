@@ -47,6 +47,25 @@ public class MotorDriverHAT
     }
     
     /**
+     * MotorDriverHAT(I2CDevice dev, int frequency) - Intanziierung und Initialisierung
+     * <p>
+     * <code>
+     * this(dev);<br>
+     * getPca9685().initialize();<br>
+     * getPca9685().setPwmFrequency(frequency);<br>
+     * </code>
+     * </p>
+     * @param dev
+     * @param frequency
+     * @throws IOException
+     */
+    public MotorDriverHAT(I2CDevice dev, int frequency) throws IOException
+    {
+        this(dev);
+        initialize(frequency);
+    }
+    
+    /**
      * initialize(int frequency) - Initialisierung des PCA9685
      * 
      * @param frequency
@@ -63,13 +82,45 @@ public class MotorDriverHAT
     }
     
     /**
-     * 
-     * @param motor
-     * @param speed
+     * setPwmMA(float speed) - Motorsteuerung MOTOR_A
+     * @param speed Vorgabe Sollwert (-1.0f <= speed <= 1.0f)
+     * @throws IOException
+     */
+    public void setPwmMA(float speed) throws IOException
+    {
+        if (((this.pca9685 == null) || (this.pca9685.pwm_A == null)))
+        {
+            throw new RuntimeException("Initialization failed!");
+        }
+        this.pca9685.pwm_A.setPwm(speed);        
+    }
+    
+    /**
+     * setPwmMB(float speed) - Motorsteuerung MOTOR_B
+     * @param speed Vorgabe Sollwert (-1.0f <= speed <= 1.0f)
+     * @throws IOException
+     */
+    public void setPwmMB(float speed) throws IOException
+    {
+        if (((this.pca9685 == null) || (this.pca9685.pwm_B == null)))
+        {
+            throw new RuntimeException("Initialization failed!");
+        }
+        this.pca9685.pwm_B.setPwm(speed);
+    }
+
+    /**
+     * setPwm(Motor motor, float speed) - Vorgabe Sollwert
+     * @param motor MOTOR_A oder MOTOR_B
+     * @param speed Vorgabe Sollwert (-1.0f <= speed <= 1.0f)
      * @throws IOException 
      */
     public void setPwm(Motor motor, float speed) throws IOException
     {
+        if (((getPca9685() == null) || (getPca9685().getPwm(motor) == null)))
+        {
+            throw new RuntimeException("Initialization failed!");
+        }
         getPca9685().getPwm(motor).setPwm(speed);
     }
     
@@ -274,11 +325,28 @@ public class MotorDriverHAT
         }
         
         /**
+         * getPwmMA()
+         * @return PwmChannel zu MOTOR_A
+         */
+        private final PwmChannel getPwmMA()
+        {
+            return this.pwm_A;
+        }
+        
+        /**
+         * getPwmMB()
+         * @return PwmChannel zu MOTOR_B
+         */
+        private final PwmChannel getPwmMB()
+        {
+            return this.pwm_A;
+        }
+        /**
          * 
          * @param motor
          * @return
          */
-        private PwmChannel getPwm(Motor motor)
+        private final PwmChannel getPwm(Motor motor)
         {
             if (motor == Motor.MOTOR_A)
             {

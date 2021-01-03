@@ -5,6 +5,8 @@ package raspi.hardware.i2c;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +56,7 @@ class MotorDriverHATTest
     public final static int FREQUENCY = 100;
     
     /**
-     * DELAY = 1000 Pausenzeit (100 ms) fuer einzelne Aktionen...
+     * DELAY = 1000 Pausenzeit (1000 ms = 1 s) fuer einzelne Aktionen...
      */
     public final static int DELAY = 1000;
     
@@ -82,6 +84,7 @@ class MotorDriverHATTest
     @AfterAll
     static void tearDownAfterClass() throws Exception
     {
+        logger.info("tearDownAfterClass()...");        
     }
 
     /**
@@ -92,8 +95,7 @@ class MotorDriverHATTest
     {
         logger.info("setUp()...");
         // Objekt MotorDriverHAT() instanziieren...
-        this.motorDriverHAT = new MotorDriverHAT(MotorDriverHATTest.i2cBus.getDevice(ADDRESS));
-        this.motorDriverHAT.initialize(FREQUENCY);
+        this.motorDriverHAT = new MotorDriverHAT(MotorDriverHATTest.i2cBus.getDevice(ADDRESS), FREQUENCY);
     }
 
     /**
@@ -102,12 +104,53 @@ class MotorDriverHATTest
     @AfterEach
     void tearDown() throws Exception
     {
+        logger.info("tearDown()..."); 
     }
 
     @Test
     void test01()
     {
-        fail("Not yet implemented");
+        logger.info("test01()...");
+        
+        float speed = 0.0F;
+        try
+        {
+            while (speed <= 1.0F)
+            {
+                logger.info("Sollwert: " + speed + "..." );
+                getMotorDriverHAT().setPwmMA(speed);
+                getMotorDriverHAT().setPwmMB(speed);
+                speed += 0.1F;
+                Thread.sleep(DELAY);
+            }
+            speed = 1.0F;
+            while (speed >= 0.0F)
+            {
+                logger.info("Sollwert: " + speed + "..." );
+                getMotorDriverHAT().setPwmMA(speed);
+                getMotorDriverHAT().setPwmMB(speed);
+                speed -= 0.1F;
+                Thread.sleep(DELAY);                
+            }
+            speed = 0.0F;
+            logger.info("Sollwert: " + speed + "..." );
+            getMotorDriverHAT().setPwmMA(speed);
+            getMotorDriverHAT().setPwmMB(speed);
+            Thread.sleep(DELAY);            
+        } 
+        catch (IOException | InterruptedException exception)
+        {
+            fail("IOException in test01()", exception);
+        }
     }
 
+    /**
+     * getMotorDriverHAT()
+     * @return this.MotorDriverHAT
+     */
+    private final MotorDriverHAT getMotorDriverHAT()
+    {
+        return this.motorDriverHAT;
+    }
+    
 }
