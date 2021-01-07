@@ -582,7 +582,7 @@ public class MotorDriverHAT
             {
                 super(channel);
                 this.in1 = new InChannel(in1_channel);
-                this.in2 = new InChannel(in1_channel);
+                this.in2 = new InChannel(in2_channel);
             }
             
             /**

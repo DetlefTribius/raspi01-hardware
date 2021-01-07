@@ -108,39 +108,78 @@ class MotorDriverHATTest
     }
 
     @Test
-    void test01()
+    void testMotorA_01()
     {
-        logger.info("test01()...");
-        
-        float speed = 0.0F;
+        logger.info("testMotorA_01()...");
+
         try
         {
-            while (speed <= 1.0F)
+            for(int sign: new int[]{1,-1})
             {
+                float speed = 0.0F;
+                
+                while (speed <= 1.0F)
+                {
+                    logger.info("Sollwert: " + (sign*speed) + "..." );
+                    getMotorDriverHAT().setPwmMA(sign*speed);
+                    speed += 0.1F;
+                    Thread.sleep(DELAY);
+                }
+                speed = 1.0F;
+                while (speed >= 0.0F)
+                {
+                    logger.info("Sollwert: " + (sign*speed) + "..." );
+                    getMotorDriverHAT().setPwmMA(sign*speed);
+                    speed -= 0.1F;
+                    Thread.sleep(DELAY);                
+                }
+                speed = 0.0F;
                 logger.info("Sollwert: " + speed + "..." );
                 getMotorDriverHAT().setPwmMA(speed);
-                getMotorDriverHAT().setPwmMB(speed);
-                speed += 0.1F;
                 Thread.sleep(DELAY);
             }
-            speed = 1.0F;
-            while (speed >= 0.0F)
-            {
-                logger.info("Sollwert: " + speed + "..." );
-                getMotorDriverHAT().setPwmMA(speed);
-                getMotorDriverHAT().setPwmMB(speed);
-                speed -= 0.1F;
-                Thread.sleep(DELAY);                
-            }
-            speed = 0.0F;
-            logger.info("Sollwert: " + speed + "..." );
-            getMotorDriverHAT().setPwmMA(speed);
-            getMotorDriverHAT().setPwmMB(speed);
-            Thread.sleep(DELAY);            
         } 
         catch (IOException | InterruptedException exception)
         {
-            fail("IOException in test01()", exception);
+            fail("IOException in testMotorA_01()", exception);
+        }
+    }
+
+    @Test
+    void testMotorB_01()
+    {
+        logger.info("testMotorB_01()...");
+        
+        try
+        {
+            for(int sign: new int[]{1,-1})
+            {
+                float speed = 0.0F;
+                
+                while (speed <= 1.0F)
+                {
+                    logger.info("Sollwert: " + (sign*speed) + "..." );
+                    getMotorDriverHAT().setPwmMB(sign*speed);
+                    speed += 0.1F;
+                    Thread.sleep(DELAY);
+                }
+                speed = 1.0F;
+                while (speed >= 0.0F)
+                {
+                    logger.info("Sollwert: " + (sign*speed) + "..." );
+                    getMotorDriverHAT().setPwmMB(sign*speed);
+                    speed -= 0.1F;
+                    Thread.sleep(DELAY);                
+                }
+                speed = 0.0F;
+                logger.info("Sollwert: " + speed + "..." );
+                getMotorDriverHAT().setPwmMB(speed);
+                Thread.sleep(DELAY);
+            }
+        } 
+        catch (IOException | InterruptedException exception)
+        {
+            fail("IOException in testMotorB_01()", exception);
         }
     }
 
