@@ -60,16 +60,42 @@ class US100SensorTest
     public final static String OS_ARCH_RASPI = "arm";
 
     /**
-     * Trigger-Pin am Raspi. In der 'normalen' Zaehlung ist es
-     * hier der GPIO018 => GPIO_01 (Pin 12).
+     * isPicar = true - Hilfskonstante zur Auswahl der Testkonfiguration
+     * Picar <=> 'normaler' Raspi.
      */
-    public final static Pin TRIG_TX_PIN = RaspiPin.GPIO_01;
+    public final static boolean isPicar = true;
     
     /**
-     * Echo-Pin am Raspi. In der 'normalen' Zaehlung ist es 
-     * hier der GPIO027 => GPIO_02 (Pin 13).
+     * <p>TRIG_TX_PIN: Trigger-Pin am Raspi.</p>
+     * <h1>1. Variante (isPicar == false)</h1>
+     * <p>
+     * In der 'normalen' Zaehlung ist es
+     * hier der GPIO018 => GPIO_01 (Pin 12).
+     * </p>
+     * <h1>2. Variante (isPicar == true)</h1>
+     * <p>
+     * Fuer das Picar wird gewaehlt:
+     * BCM pin 5 => Wiring Pi pin 21 (Board-Nr. pin 29)<br>
+     * Bezeichnung auf dem HAT: B5 => In Code: GPIO_21
+     * </p>
      */
-    public final static Pin ECHO_RX_PIN = RaspiPin.GPIO_02;
+    public final static Pin TRIG_TX_PIN = (isPicar)? RaspiPin.GPIO_21 : RaspiPin.GPIO_01;
+    
+    /**
+     * <p>ECHO_RX_PIN: Echo-Pin am Raspi. </p>
+     * <h1>1. Variante (isPicar == false)</h1>
+     * <p>
+     * In der 'normalen' Zaehlung ist es 
+     * hier der GPIO027 => GPIO_02 (Pin 13).
+     * </p>
+     * <h1>2. Variante (isPicar == true)</h1>
+     * <p>
+     * Fuer das Picar wird gewaehlt:
+     * BCM pin 6 => Wiring Pi pin 22 (Board-Nr. pin 31)<br>
+     * Bezeichnung auf dem HAT: B6 => Im Code: GPIO_22
+     * </p>
+     */
+    public final static Pin ECHO_RX_PIN = (isPicar)? RaspiPin.GPIO_22 : RaspiPin.GPIO_02;
 
     /**
      * DELAY = 1000 Pausenzeit (1000 ms) fuer einzelne Aktionen...
