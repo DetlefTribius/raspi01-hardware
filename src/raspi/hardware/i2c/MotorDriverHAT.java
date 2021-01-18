@@ -321,7 +321,7 @@ public class MotorDriverHAT
             
             // Zum Motor B geheoeren ein PWM-Channel und zwei In-Channel...
             // (Anm.: gesteuert wird ueber den PWM-Channel) 
-            this.pwm_B = new PwmChannel(PMWB_CHANNEL, IN1B_CHANNEL, IN1B_CHANNEL);
+            this.pwm_B = new PwmChannel(PMWB_CHANNEL, IN1B_CHANNEL, IN2B_CHANNEL);
         }
         
         /**
