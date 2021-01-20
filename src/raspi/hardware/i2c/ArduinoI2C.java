@@ -73,22 +73,49 @@ public class ArduinoI2C extends I2C
         // Ablage der FK Zahl mit dem oberen Teil in buffer[3] 
         // und den niederwertigsten Teil in buffer[0]. 
         // => Arduino und Raspi sind "little-endian"...
-        final long token = ((((((((long)buffer[3]) & 0xff)<<8)
-                              + (((long)buffer[2]) & 0xff))<<8)
-                              + (((long)buffer[1]) & 0xff))<<8)
-                              + (((long)buffer[0]) & 0xff);
+        long token = 0L;
+        // index mit dem Index des HWT laden (HWT an Index 3)...
+        int index = 3;
+        while (index >= 0)      // ...bis einschliesslich Index 0. 
+        {
+            token <<= 8;        // untere 8 Bit frei-shiften...
+            token += ((int)buffer[index--]) & 0xff;
+        }
+        // token ist bestimmt aus den unteren 4 Byte (von Index 0...3).
+        // Da token als long eingefuehrt, ist token immer positiv!
         
+        // Status ergibt sich aus dem byte[4]...
         final Status status = Status.getStatus(buffer[4]);
         
-        // buffer[5] ... buffer[8] gebildet aus einer 4 Byte ZK-Zahl
-        // (in C als long vereinbart), Wandlung in Java als int-Zahl,
-        // damit mit Betrachtung des VZ!
-        final int value = ((((((((int)buffer[8]) & 0xff)<<8) 
-                             + (((int)buffer[7]) & 0xff))<<8) 
-                             + (((int)buffer[6]) & 0xff))<<8) 
-                             + (((int)buffer[5]) & 0xff);
+        // buffer[5] ... buffer[8] gebildet wird 
+        // 1.) als int-Zahl interpretiert und damit mit Vorzeichen versehen
+        //     (in C war die Zahl als long-Zahl vereinbart)
+        // oder
+        // 2.) als zwei nur positive Impulszahlen numberMA und numberMB angegeben.
+        //     (in C waren die Zahlen jeweils uls unsigned int vereinbart).
+        //
+        // Die Wandlung wird zuerst in eine long Zahl data vorgenommen 
+        // und dann jeweils in die Ergebnisvariablen umgewandelt...
+        long data = 0;
+        // index mit dem Index des HWT laden (HWT an Index 8)...
+        index = 8;
+        while (index >= 5)      // ...bis einschliesslich Index 5.
+        {
+            data <<= 8;        // untere 8 Bit frei-shiften...
+            data += ((int)buffer[index--]) & 0xff;
+        }
+        // data ist bestimmt.
         
-        return new ArduinoI2C.DataRequest(token, status, value);
+        final int value = (int) data & 0xffffffff;
+        // data => value ist bestimmt aus den 4 Byte (von Index 5...8) mit VZ!
+        
+        final int numberMA =(int) ((data & 0xffff0000) >> 16);
+        // data => numberMA ist bestimmt...
+        
+        final int numberMB = (int) (value & 0x0000ffff);
+        // data => numberMB ist bestimmt... 
+        
+        return new ArduinoI2C.DataRequest(token, status, value, numberMA, numberMB);
     }
     
     /**
@@ -184,18 +211,37 @@ public class ArduinoI2C extends I2C
          * int-Value zum Token token
          */
         final private int value;
+        
         /**
-         * DataRequest(long token, Status status, int value) - Konstruktor
+         * numberMA - Impulsanzahl MA
+         */
+        final private int numberMA;
+        
+        /**
+         * numberMB - Impulsanzahl MA
+         */
+        final private int numberMB;
+        
+        /**
+         * DataRequest(long token, Status status, int value, int numberMA, int numberMB) - Konstruktor
          * aus den Zustandsgroessen...
          * @param token
          * @param status
          * @param value
+         * @param numberMA
+         * @param numberMB
          */
-        public DataRequest(long token, Status status, int value)
+        public DataRequest(long token, 
+                           Status status, 
+                           int value,
+                           int numberMA,
+                           int numberMB)
         {
             this.token = token;
             this.status = status;
             this.value = value;
+            this.numberMA = numberMA;
+            this.numberMB = numberMB;
         }
         
         /**
@@ -207,7 +253,7 @@ public class ArduinoI2C extends I2C
          */
         public final long getToken()
         {
-            return token;
+            return this.token;
         }
 
         /**
@@ -218,7 +264,7 @@ public class ArduinoI2C extends I2C
          */
         public final Status getStatus()
         {
-            return status;
+            return this.status;
         }
 
         /**
@@ -227,9 +273,27 @@ public class ArduinoI2C extends I2C
          */
         public final int getValue()
         {
-            return value;
+            return this.value;
         }
 
+        /**
+         * getNumberMA() - liefert die uebertragenen Impulsanzahl...
+         * @return numberMA
+         */
+        public final int getNumberMA()
+        {
+            return this.numberMA;
+        }
+        
+        /**
+         * getNumberMB() - liefert die uebertragenen Impulsanzahl...
+         * @return numberMB
+         */
+        public final int getNumberMB()
+        {
+            return this.numberMB;
+        }
+        
         /**
          * toString() - zu Protokollzwecken...
          */
@@ -243,6 +307,10 @@ public class ArduinoI2C extends I2C
                                                                    : "null")
                                       .append(" ")
                                       .append(this.value)
+                                      .append(" ")
+                                      .append(this.numberMA)
+                                      .append(" ")
+                                      .append(this.numberMB)
                                       .append("]")
                                       .toString();
         }
