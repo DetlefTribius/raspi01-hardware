@@ -7,8 +7,6 @@ import java.io.IOException;
 
 import com.pi4j.io.i2c.I2CDevice;
 
-import raspi.hardware.i2c.PCA9685.Property;
-
 /**
  * 
  * <p>
