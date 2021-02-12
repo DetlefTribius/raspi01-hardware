@@ -47,7 +47,7 @@ import com.pi4j.io.gpio.event.GpioPinListenerDigital;
  *   <code>Millimeters = PulseWidth * 34 / 100 / 2</code>
  * </p>
  */
-public class US100Sensor
+public abstract class US100Sensor
 {
 
     /**
@@ -146,9 +146,9 @@ public class US100Sensor
     private final static int BENCHMARK_DISTANCE = 6;
     
     /**
-     * SCALE_DISTANCE = 2 - Genauigkeit, 2 Nachkommastellen
+     * SCALE_DISTANCE = 1 - Genauigkeit, 1 Nachkommastellen (Angabe in cm)
      */
-    private final static int SCALE_DISTANCE = 2;
+    private final static int SCALE_DISTANCE = 1;
     
     /**
      * US100Sensor(...) - Konstruktor zum US100Sensor
@@ -190,7 +190,10 @@ public class US100Sensor
                 if (PinEdge.RISING == pinEdge)
                 {
                     final long nowRising = System.nanoTime();
+                    /////////////////////////////////////////////////////////////////////////////////////
+                    // => Weniger Ausgaben...
                     // logger.debug("Rising: " + nowRising);
+                    
                     if (US100Sensor.this.status == US100Sensor.Status.STARTED)
                     {
                         US100Sensor.this.status = US100Sensor.Status.RISING;
@@ -203,7 +206,10 @@ public class US100Sensor
                 if (PinEdge.FALLING == pinEdge)
                 {
                     final long nowFalling = System.nanoTime();
+                    /////////////////////////////////////////////////////////////////////////////////////
+                    // => Weniger Ausgaben...
                     // logger.debug("Falling: " + nowFalling);
+
                     if (US100Sensor.this.status == US100Sensor.Status.RISING)
                     {
                         US100Sensor.this.status = US100Sensor.Status.FALLING;
@@ -215,17 +221,30 @@ public class US100Sensor
                         US100Sensor.this.deltaTime = BigDecimal.valueOf(US100Sensor.this.deltaNanoTime).movePointLeft(NANO_TO_MILLIS)
                                                                                                        .setScale(SCALE_DELTA_TIME, BigDecimal.ROUND_HALF_UP);
 
-                        logger.debug("deltaTime: " + US100Sensor.this.deltaTime.toString());
+                        /////////////////////////////////////////////////////////////////////////////////////
+                        // => Weniger Ausgaben...
+                        // logger.debug("deltaTime: " + US100Sensor.this.deltaTime.toString());
                         
                         // Distance in cm...
                         US100Sensor.this.distance = BigDecimal.valueOf(US100Sensor.this.deltaNanoTime * FACTOR).movePointLeft(BENCHMARK_DISTANCE)
                                                                                                                .setScale(SCALE_DISTANCE, BigDecimal.ROUND_HALF_UP);
-                        logger.debug("distance: " + US100Sensor.this.distance.toString() );
+
+                        /////////////////////////////////////////////////////////////////////////////////////
+                        // => Weniger Ausgaben...
+                        // logger.debug("distance: " + US100Sensor.this.distance.toString() );
+                        
+                        // Messergebnis uebermitteln...
+                        final ResultVO resultVO = new ResultVO(nowFalling,
+                                                               US100Sensor.this.deltaTime,
+                                                               US100Sensor.this.distance);
+                        setResultVO(resultVO);
                     }
                     return;
                 }
             }
         });
+        
+        logger.debug("US100Sensor instanziiert.");
     }
 
     /**
@@ -287,6 +306,18 @@ public class US100Sensor
     }
 
     /**
+     * setResultVO(ResultVO resultVO);
+     * <p>
+     * Die abstract-Methode dient dazu, das Ergebnis des Messvorganges, hier
+     * das ResultVO in die Umgebung des Aufrufers zu transferieren. Die aufrufende
+     * Umgebung muss diese Methode bereitstellen, die dann am Ende des Messvorganges
+     * aufgerufen wird. 
+     * </p>
+     * @param resultVO
+     */
+    public abstract void setResultVO(ResultVO resultVO);
+    
+    /**
      * 
      * Status - enum beschreibt den Status
      * des Messvorganges
@@ -319,6 +350,126 @@ public class US100Sensor
         public final String getStatus()
         {
             return this.status;
+        }
+    }
+    
+    /**
+     * 
+     * @author Detlef Tribius
+     *
+     */
+    public class ResultVO
+    {
+        /**
+         * VO_NANOTIME = "voNanoTime"
+         */
+        public final static String VO_NANOTIME = "voNanoTime";
+        /**
+         * VO_DELTATIME = "voDeltaTime"
+         */
+        public final static String VO_DELTATIME = "voDeltaTime";
+        /**
+         * VO_DISTANCE = "voDistance"
+         */
+        public final static String VO_DISTANCE = "voDistance";
+        
+        /**
+         * nanoTime
+         */
+        final Long nanoTime;
+        /**
+         * deltaTime - Messzeit
+         */
+        final BigDecimal deltaTime;
+        /**
+         * distance - Absatnd in cm
+         */
+        final BigDecimal distance;
+        /**
+         * ResultVO(long nanoTime, BigDecimal deltaTime, BigDecimal distance)
+         * @param nanoTime
+         * @param deltaTime
+         * @param distance
+         */
+        public ResultVO(long nanoTime, BigDecimal deltaTime, BigDecimal distance)
+        {
+            this.nanoTime = Long.valueOf(nanoTime);
+            this.deltaTime = (deltaTime != null)? deltaTime : BigDecimal.ZERO.setScale(SCALE_DELTA_TIME);
+            this.distance = (distance != null)? distance : BigDecimal.ZERO.setScale(SCALE_DISTANCE);
+        }
+        
+        /**
+         * getNanoTime() - 
+         * @return the nanoTime, Ergebnis von System.nanoTime()
+         */
+        public final Long getNanoTime()
+        {
+            return nanoTime;
+        }
+
+        /**
+         * getDeltaTime()
+         * @return the deltaTime - Messzeit
+         */
+        public final BigDecimal getDeltaTime()
+        {
+            return deltaTime;
+        }
+
+        /**
+         * getDistance() - liefert Distanz in cm
+         * @return the distance in cm
+         */
+        public final BigDecimal getDistance()
+        {
+            return distance;
+        }
+
+        /**
+         * getKeys() - liefert die Keys zum Zugriff auf die Values...
+         * @return new String[] {VO_NANOTIME, VO_DELTATIME, VO_DISTANCE}
+         */
+        public String[] getKeys()
+        {
+            return new String[] {VO_NANOTIME, VO_DELTATIME, VO_DISTANCE};
+        }
+        
+        /**
+         * getValue(String key)
+         * @param key String key
+         * @return Object
+         */
+        public final Object getValue(String key)
+        {
+            if (ResultVO.VO_NANOTIME.equals(key))
+            {
+                return this.nanoTime;
+            }
+            if (ResultVO.VO_DELTATIME.equals(key))
+            {
+                return this.deltaTime;
+            }
+            if (ResultVO.VO_DISTANCE.equals(key))
+            {
+                return this.distance;
+            }
+            return null;
+        }
+        
+        /**
+         * toString() - zu Protokollzwecken...
+         * @return String "[...]"
+         */
+        public String toString()
+        {
+            return new StringBuilder().append("[")
+                                      .append(this.nanoTime)
+                                      .append(" ")
+                                      .append(this.deltaTime)
+                                      .append(" ")
+                                      .append(this.distance)
+                                      .append("]")
+                                      .toString();
         }
     }
 }

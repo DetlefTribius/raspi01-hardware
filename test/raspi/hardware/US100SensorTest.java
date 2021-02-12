@@ -3,6 +3,7 @@
  */
 package raspi.hardware;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
@@ -121,6 +122,11 @@ class US100SensorTest
     private US100Sensor us100Sensor = null;;
     
     /**
+     * 
+     */
+    private US100Sensor.ResultVO resultVO = null;
+    
+    /**
      * @throws java.lang.Exception
      */
     @BeforeAll
@@ -156,8 +162,16 @@ class US100SensorTest
         // Zugriff auf den Sensor instanziieren...
         this.us100Sensor = new US100Sensor(this.gpio, 
                                            US100SensorTest.TRIG_TX_PIN, 
-                                           US100SensorTest.ECHO_RX_PIN);
-
+                                           US100SensorTest.ECHO_RX_PIN)
+                {
+                    @Override
+                    public void setResultVO(ResultVO resultVO)
+                    {
+                        US100SensorTest.this.resultVO = resultVO;
+                        logger.info("resultVO=" + ((US100SensorTest.this.resultVO != null)? US100SensorTest.this.resultVO.toString() 
+                                                                                          : "null"));
+                    }
+                };
     }
 
     /**
@@ -177,9 +191,21 @@ class US100SensorTest
             int counter = 0;
             while(counter++ < US100SensorTest.COUNTER_LIMIT)
             {
+                // Ergebnis-VO zuruecksetzen...
+                this.resultVO = null;
+                // Das Ergebnis-VO wird im Verlauf der Messung innerhalb der
+                // Methode setResultVO(ResultVO resultVO) instanziiert...
                 this.us100Sensor.startMeasuring();
                 Thread.sleep(DELAY);
-                final BigDecimal distance = this.us100Sensor.getDistance();
+                
+                final BigDecimal distance = (this.resultVO != null)? this.resultVO.getDistance()
+                                                                   : null;
+                if (counter > 1)
+                {
+                    // (counter > 1) => Anlaufschwierigkeiten tolerieren...
+                    assertNotNull("The resultVO return null! ", distance);
+                }    
+                
                 logger.info("Distance " + counter + " : " + distance);
                 Thread.sleep(DELAY);
             }    
